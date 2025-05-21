@@ -1,2 +1,40 @@
-venv
-frontend/node_modules
+# Byte-compiled Python files
+*.py[cod]
+
+# Log files
+*.log
+
+# Database files
+*.db
+*.sqlite3
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# Virtual environment files
+venv/
+env/
+
+# Django files
+*.pid
+
+# Static files
+staticfiles/
+
+# Media files
+media/
+
+# Byte-compiled Python files
+**/__pycache__/
+*.py[cod]
+
+# Other files
+*.key
+*.pem
+*.env

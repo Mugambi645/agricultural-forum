@@ -1,0 +1,12 @@
+{% autoescape off %}
+Hi {{ user.username }},
+
+Please click on the link below to activate your AgriForum account:
+
+http://{{ domain }}{% url 'activate_account' uidb64=uid token=token %}
+
+If you did not register for an account, please ignore this email.
+
+Thanks,
+The AgriForum Team
+{% endescape %}
