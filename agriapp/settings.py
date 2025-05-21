@@ -140,7 +140,7 @@ AUTH_USER_MODEL = 'accounts.CustomUser'
 
 # Redirects after login/logout
 LOGIN_REDIRECT_URL = 'home:index' # Replace with your actual home URL name
-LOGOUT_REDIRECT_URL = 'home:index' # Redirect to login page after logout
+LOGOUT_REDIRECT_URL = '/accounts/login/'  # Redirect to login page after logout
 
 # Email backend settings (Crucial for email verification and password reset)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # For development: prints emails to console

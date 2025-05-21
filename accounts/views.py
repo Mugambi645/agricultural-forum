@@ -17,6 +17,12 @@ from django.db import transaction
 
 from .forms import CustomUserCreationForm, UserProfileUpdateForm, CustomPasswordChangeForm
 from .models import CustomUser, UserProfile 
+
+
+from django.contrib.auth.views import LoginView as AuthLoginView # Rename for clarity
+
+
+
 # --- Registration View ---
 class SignUpView(generic.CreateView):
     form_class = CustomUserCreationForm
@@ -127,3 +133,17 @@ def account_delete_confirm(request):
             messages.error(request, f"There was an error deleting your account: {e}")
             return redirect('accounts:profile') # Redirect back to profile if deletion fails
     return render(request, 'users/account_delete_confirm.html')
+
+
+
+
+class CustomLoginView(AuthLoginView):
+    template_name = 'registration/login.html'
+
+    def form_invalid(self, form):
+        """
+        Called when a form submitted to the view is invalid.
+        Adds an error message to the Django messages framework.
+        """
+        messages.error(self.request, "Please enter a correct username and password. Note that both fields may be case-sensitive.")
+        return super().form_invalid(form) # Still call the parent method to re-render the form with errors
