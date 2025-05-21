@@ -12,7 +12,7 @@ urlpatterns = [
     path('account_activation_sent/', views.account_activation_sent, name='account_activation_sent'),
 
     # Built-in Login and Logout (using Django's views for simplicity, though you can override them)
-    path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
+    path('login/', views.CustomLoginView.as_view(), name='login'), 
     path('logout/', auth_views.LogoutView.as_view(template_name='registration/logged_out.html'), name='logout'),
 
     # Profile Management
