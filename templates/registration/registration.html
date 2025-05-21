@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Sign Up{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm p-4 mt-5">
+            <h2 class="card-title text-center mb-4">Register for AgriForum</h2>
+            <form method="post">
+                {% csrf_token %}
+                {{ form|crispy }}
+                <button type="submit" class="btn btn-success w-100 mt-3">Register</button>
+            </form>
+            <p class="text-center mt-3">Already have an account? <a href="{% url 'accounts:login' %}">Log In</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
