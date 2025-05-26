@@ -1,4 +1,3 @@
-Okay, here's the AgriApp README presented in a more high-level, "canvas" style document format, with Docker and Kubernetes exclusively highlighted as future improvements.
 
 ---
 
