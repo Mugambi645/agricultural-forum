@@ -6,41 +6,79 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}AgriForum{% endblock %}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link href="{% static 'css/style.css' %}" rel="stylesheet">
+    <style>
+        /* Optional: Custom styles for flagged comments */
+        .card {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .flagged-comment {
+            background-color: #fff3cd; /* Bootstrap's warning-light color */
+            border-left: 5px solid #ffc107; /* Bootstrap's warning color */
+            padding-left: 1rem;
+        }
+        .flagged-comment .flag-reason {
+            font-size: 0.8em;
+            color: #b08c00; /* Darker yellow */
+            margin-top: 0.5rem;
+        }
+        /* Custom styles for form fields to match Bootstrap's look without crispy */
+        .form-control {
+            display: block;
+            width: 100%;
+            padding: 0.375rem 0.75rem;
+            font-size: 1rem;
+            font-weight: 400;
+            line-height: 1.5;
+            color: var(--bs-body-color);
+            background-color: var(--bs-form-control-bg);
+            background-clip: padding-box;
+            border: var(--bs-border-width) solid var(--bs-border-color);
+            border-radius: var(--bs-border-radius);
+            transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+        }
+    </style>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-success">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'home:index' %}">AgriForum</a>
+            <a class="navbar-brand" href="{% url 'discussions:discussion_list' %}">AgriForum</a> {# Changed to discussion_list for direct link #}
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'home:index' %}">Home</a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'discusssions:discussion_list' %}active{% endif %}" aria-current="page" href="{% url 'discussions:discussion_list' %}">Home</a>
                     </li>
-                    </ul>
+                     <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'discussions:create_discussion' %}active{% endif %}" href="{% url 'discussions:create_discussion' %}">New Discussion</a>
+                    </li>
+                </ul>
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'accounts:profile' %}">Welcome, {{ user.username }}</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link">
-                            <form action="{% url 'logout' %}" method="post" style="display: inline;">
-                                {% csrf_token %}
-                                <button type="submit" class="nav-link btn btn-link py-0 align-baseline">Logout</button>
-                            </form>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownUser" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Welcome, {{ user.username }}
                             </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownUser">
+                                {# Add a profile link if you have one #}
+                                {# <li><a class="dropdown-item" href="{% url 'accounts:profile' %}">Profile</a></li> #}
+                                <li>
+                                    <form action="{% url 'accounts:logout' %}" method="post" class="dropdown-item">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-link nav-link p-0 text-decoration-none text-dark">Logout</button>
+                                    </form>
+                                </li>
+                            </ul>
                         </li>
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'accounts:login' %}">Login</a>
+                            <a class="nav-link" href="{% url 'accounts:login' %}">Login</a> {# Changed to generic 'login' #}
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'accounts:signup' %}">Sign Up</a>
+                            <a class="nav-link" href="{% url 'accounts:register' %}">Sign Up</a> {# Changed to generic 'register' #}
                         </li>
                     {% endif %}
                 </ul>
@@ -62,10 +100,10 @@
         {% endblock %}
     </div>
 
-    <footer class="bg-light text-center py-3 mt-5">
+    <footer class="bg-light text-center py-3 mt-5 border-top">
         <p>&copy; 2025 AgriForum. All rights reserved.</p>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 </body>
 </html>

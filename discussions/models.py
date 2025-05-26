@@ -2,12 +2,13 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.urls import reverse
+from django.conf import settings
 
 class Discussion(models.Model):
     """Represents a main discussion post in the forum."""
     title = models.CharField(max_length=200)
     content = models.TextField()
-    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='discussions')
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='discussions')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -19,12 +20,12 @@ class Discussion(models.Model):
 
     def get_absolute_url(self):
         """Returns the URL to access a particular discussion instance."""
-        return reverse('discussion_detail', args=[str(self.id)])
+        return reverse('discussions:discussion_detail', args=[str(self.id)])
 
 class Comment(models.Model):
     """Represents a comment on a discussion post."""
     discussion = models.ForeignKey(Discussion, on_delete=models.CASCADE, related_name='comments')
-    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments')
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='comments')
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     is_flagged = models.BooleanField(default=False) # For ML moderation

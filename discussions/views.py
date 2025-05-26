@@ -44,7 +44,7 @@ def discussion_detail(request, pk):
 
     if request.method == 'POST':
         if not request.user.is_authenticated:
-            return redirect('login') # Redirect to login if not authenticated
+            return redirect('accounts:login') # Redirect to login if not authenticated
 
         comment_form = CommentCreateForm(request.POST, request.FILES)
         if comment_form.is_valid():
@@ -102,7 +102,7 @@ def discussion_detail(request, pk):
                 )
                 # --- End Real-time ---
 
-                return redirect('discussion_detail', pk=pk) # Redirect to prevent form resubmission
+                return redirect('discussions:discussion_detail', pk=pk) # Redirect to prevent form resubmission
 
     context = {
         'discussion': discussion,
@@ -137,5 +137,5 @@ def create_discussion(request):
                         image=form.cleaned_data['attachment_image'],
                         description=form.cleaned_data['attachment_description']
                     )
-                return redirect('discussion_detail', pk=discussion.pk)
+                return redirect('discussions:discussion_detail', pk=discussion.pk)
     return render(request, 'discussions/create_discussion.html', {'form': form})
