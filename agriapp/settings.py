@@ -41,8 +41,13 @@ INSTALLED_APPS = [
     # Custom apps
     "accounts",
     "home",
+    "discussions",
+
+    # Third-party apps
     "crispy_forms",
     "crispy_bootstrap5",
+    "channels",
+    'location_field', 
 ]
 
 MIDDLEWARE = [
@@ -156,3 +161,18 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # For developme
 # crispy forms settings
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
+
+
+# Channels settings (for real-time)
+ASGI_APPLICATION = 'agriapp.asgi.application'
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer', # Simple in-memory layer for development
+        # For production, consider using Redis:
+        # 'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        # 'CONFIG': {
+        #     "hosts": [('127.0.0.1', 6379)],
+        # },
+    },
+}
+

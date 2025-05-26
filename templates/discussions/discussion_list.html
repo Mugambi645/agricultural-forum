@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% load static %} {# Make sure this is loaded #}
+
+{% block title %}Discussions{% endblock %}
+
+{% block content %}
+<h1 class="mb-4 text-success">Latest Discussions</h1>
+
+<div class="row">
+    {% for discussion in discussions %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title text-success">
+                        <a href="{{ discussion.get_absolute_url }}" class="text-decoration-none text-success hover-underline">{{ discussion.title }}</a>
+                    </h5>
+                    <p class="card-text text-muted mb-3">{{ discussion.content|truncatechars:150 }}</p>
+                    <div class="d-flex justify-content-between align-items-center small text-muted">
+                        <span>Posted by {{ discussion.author.username }} on {{ discussion.created_at|date:"M d, Y H:i" }}</span>
+                        <a href="{{ discussion.get_absolute_url }}" class="btn btn-sm btn-outline-success">Read More &rarr;</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info" role="alert">
+                No discussions yet. Be the first to start one!
+                {% if user.is_authenticated %}
+                    <a href="{% url 'discussions:create_discussion' %}" class="alert-link">Start a New Discussion</a>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+{% if user.is_authenticated %}
+    <div class="mt-4 text-center">
+        <a href="{% url 'discussions:create_discussion' %}" class="btn btn-success btn-lg">Start a New Discussion</a>
+    </div>
+{% endif %}
+{% endblock %}
