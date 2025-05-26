@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "accounts",
     "home",
     "discussions",
+    "disease_predictor",
 
     # Third-party apps
     "crispy_forms",
@@ -176,3 +177,15 @@ CHANNEL_LAYERS = {
     },
 }
 
+# Location field settings for Leaflet maps
+LOCATION_FIELD = {
+    'map.provider': 'leaflet',
+    'map.zoom': 13,  # Default zoom level (e.g., 13 for city view)
+    'map.center': [-0.046394, 37.649842], # Coordinates for Meru, Kenya (Latitude, Longitude)
+    'map.language': 'en',
+    'map.provider.leaflet': {
+        'url': 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        'attribution': '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        'max_zoom': 18,
+    }
+}

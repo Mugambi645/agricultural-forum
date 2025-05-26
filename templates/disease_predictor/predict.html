@@ -1,0 +1,105 @@
+{% extends "base.html" %} {# Ensure this extends your main base template #}
+{% load static %}
+{% load crispy_forms_tags %} {# Assuming you use crispy forms for nicer form rendering #}
+
+{% block title %}Plant Disease Detector{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-body">
+        <h1 class="card-title text-success mb-4">Crop Disease Recognition</h1>
+        <p class="card-text mb-4">Upload an image of a plant leaf to detect potential diseases and get more information.</p>
+
+        <form method="post" enctype="multipart/form-data" id="upload-form">
+            {% csrf_token %}
+            {{ form|crispy }} {# Render your form using crispy forms #}
+            <div class="mb-3">
+                <img id="image-preview" src="#" alt="Image Preview" class="img-fluid rounded" style="display: none; max-height: 200px; object-fit: contain;">
+            </div>
+            <button type="submit" class="btn btn-success">Predict</button>
+        </form>
+
+        {% if prediction %}
+            <hr class="my-4">
+            {% if prediction.error %}
+                <div class="alert alert-danger" role="alert">
+                    <strong>Prediction Error:</strong> {{ prediction.error }}
+                </div>
+            {% else %}
+                <h3 class="h4 text-success mb-3">Prediction Result:</h3>
+                <div class="row">
+                    <div class="col-md-4">
+                        {% if uploaded_image_url %}
+                            <img src="{{ uploaded_image_url }}" alt="Uploaded Plant" class="img-fluid rounded shadow-sm mb-3">
+                        {% endif %}
+                    </div>
+                    <div class="col-md-8">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">
+                                <strong>Predicted Condition:</strong>
+                                {% if prediction.is_healthy %}
+                                    <span class="badge bg-success">{{ prediction.common_name }}</span>
+                                {% else %}
+                                    <span class="badge bg-danger">{{ prediction.common_name }}</span>
+                                {% endif %}
+                            </li>
+                            <li class="list-group-item"><strong>Confidence:</strong> <span class="badge bg-info">{{ prediction.confidence|floatformat:2 }}%</span></li>
+                            {% if prediction.description %}
+                                <li class="list-group-item"><strong>Description:</strong> {{ prediction.description }}</li>
+                            {% endif %}
+                            {% if prediction.remedy %}
+                                <li class="list-group-item"><strong>Suggested Remedy:</strong> {{ prediction.remedy }}</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            {% endif %}
+        {% endif %}
+
+        {# Optional: Display recent predictions here if you have a list in context #}
+        {% comment %}
+        <hr class="my-4">
+        <h3 class="h4 text-success mb-3">Your Recent Predictions:</h3>
+        {% if recent_predictions %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Image</th>
+                            <th>Prediction</th>
+                            <th>Confidence</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pred in recent_predictions %}
+                            <tr>
+                                <td><img src="{{ pred.image.url }}" alt="Prediction Image" width="70" height="70" class="rounded" style="object-fit: cover;"></td>
+                                <td>{{ pred.prediction_label }}</td>
+                                <td>{{ pred.confidence|floatformat:2 }}</td>
+                                <td>{{ pred.predicted_at|date:"M d, Y H:i" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">No recent predictions found.</p>
+        {% endif %}
+        {% endcomment %}
+    </div>
+</div>
+
+<script>
+    // JavaScript for image preview (remains the same as before)
+    document.getElementById('id_image').addEventListener('change', function(event) {
+        const [file] = event.target.files;
+        if (file) {
+            document.getElementById('image-preview').src = URL.createObjectURL(file);
+            document.getElementById('image-preview').style.display = 'block';
+        } else {
+            document.getElementById('image-preview').style.display = 'none';
+        }
+    });
+</script>
+{% endblock %}
