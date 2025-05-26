@@ -53,48 +53,10 @@
 
 <div id="comments-container">
     {% for comment in comments %}
-        <div class="card mb-3 comment-item {% if comment.is_flagged %}flagged-comment{% endif %}" id="comment-{{ comment.id }}">
-            <div class="card-body">
-                <p class="card-text">{{ comment.content }}</p>
-                <div class="d-flex justify-content-between align-items-center small text-muted">
-                    <span>By {{ comment.author.username }} on {{ comment.created_at|date:"M d, Y H:i" }}</span>
-                    {% if comment.is_flagged %}
-                        <span class="badge bg-warning text-dark">Flagged!</span>
-                    {% endif %}
-                </div>
-                {% if comment.is_flagged and comment.flag_reason %}
-                    <p class="flag-reason mt-1 mb-0">Reason: {{ comment.flag_reason }}</p>
-                {% endif %}
-
-                {% if comment.attachments %}
-                    <div class="mt-3 pt-3 border-top border-light">
-                        <h4 class="h6 mb-2 text-muted">Comment Attachments:</h4>
-                        <div class="row row-cols-1 row-cols-sm-2 g-2">
-                            {% for attachment in comment.attachments.all %}
-                                <div class="col">
-                                    <div class="card bg-light border-0 shadow-sm">
-                                        <div class="card-body p-2">
-                                            {% if attachment.image %}
-                                                <img src="{{ attachment.image.url }}" alt="{{ attachment.description|default:'Comment attachment image' }}" class="img-fluid rounded mb-1">
-                                            {% elif attachment.file %}
-                                                <p class="card-text text-primary small">
-                                                    <a href="{{ attachment.file.url }}" target="_blank" class="text-decoration-none d-block text-truncate">
-                                                        <i class="bi bi-file-earmark"></i> Download: {{ attachment.file.name|cut:"attachments/files/" }}
-                                                    </a>
-                                                </p>
-                                            {% endif %}
-                                            {% if attachment.description %}
-                                                <p class="card-text small text-muted mt-1">{{ attachment.description }}</p>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
+        {% include 'discussions/comment_item.html' with comment=comment %}
+        {% for reply in comment.replies.all %}
+            {% include 'discussions/comment_item.html' with comment=reply is_reply=True %}
+        {% endfor %}
     {% empty %}
         <div class="alert alert-info" role="alert" id="no-comments-message">
             No comments yet. Be the first to reply!
@@ -108,150 +70,198 @@
             <h3 class="h4 mb-3 text-success">Add a Comment</h3>
             <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
-                {{ comment_form|crispy }} {# Render the form using crispy_forms #}
+                {{ comment_form|crispy }}
                 <button type="submit" class="btn btn-success mt-3">Post Comment</button>
             </form>
         </div>
     </div>
 {% else %}
     <div class="alert alert-info mt-4" role="alert">
-        Please <a href="{% url 'login' %}" class="alert-link">log in</a> to add a comment.
+        Please <a href="{% url 'accounts:login' %}" class="alert-link">log in</a> to add a comment.
     </div>
 {% endif %}
 
 {% if discussion.location %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAo9TchX0AdfXhjmYpajlfWsoVrpBUc0yIAPDFlA=" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nEFhflZpDk/r2tJzDk=" crossorigin=""></script>
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nEFhflZqfV/nC/x/S5E3iE4aK0q3w9p5d/r2tJzDk=" crossorigin=""></script>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const mapElement = document.getElementById('discussion-map');
+                if (mapElement) {
+                    // Parse coordinates (they come as "latitude,longitude")
+                    const [lat, lon] = "{{ discussion.location }}".split(',').map(Number);
+                    const mapCenter = [lat, lon];
+
+                    const map = L.map('discussion-map').setView(mapCenter, 13); // Default zoom 13
+
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    }).addTo(map);
+
+                    L.marker(mapCenter).addTo(map)
+                        .bindPopup("<b>Discussion Location</b>").openPopup();
+
+                    // Invalidate size after map container is visible (important if map is in a hidden tab/modal)
+                    setTimeout(function () {
+                        map.invalidateSize();
+                    }, 100);
+                }
+            });
+        </script>
+    {% endif %}
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const mapElement = document.getElementById('discussion-map');
-            if (mapElement) {
-                // Parse coordinates (they come as "latitude,longitude")
-                const [lat, lon] = "{{ discussion.location }}".split(',').map(Number);
-                const mapCenter = [lat, lon];
+  const discussionId = {{ discussion.id }}; // Make discussion ID available globally in JS
+        const commentsContainer = document.getElementById('comments-container');
+        const noCommentsMessage = document.getElementById('no-comments-message');
+        const currentUserIsAuthenticated = {{ user.is_authenticated|yesno:"true,false" }}; // Pass auth status
+        const currentUserId = {{ user.id|default_if_none:"null" }}; // Pass user ID
 
-                const map = L.map('discussion-map').setView(mapCenter, 13); // Default zoom 13
+        // Function to create a comment HTML element (used for WebSocket new comments)
+        function createCommentElement(commentData) {
+            const isReply = commentData.parent_id !== null; // Determine if it's a reply from parent_id
+            const commentDiv = document.createElement('div');
+            commentDiv.className = `card mb-3 comment-item ${commentData.is_flagged ? 'flagged-comment' : ''} ${isReply ? 'ms-5' : ''}`;
+            commentDiv.id = `comment-${commentData.id}`;
 
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                }).addTo(map);
-
-                L.marker(mapCenter).addTo(map)
-                    .bindPopup("<b>Discussion Location</b>").openPopup();
-
-                // Invalidate size after map container is visible (important if map is in a hidden tab/modal)
-                setTimeout(function () {
-                    map.invalidateSize();
-                }, 100);
-            }
-        });
-    </script>
-{% endif %}
-
-<script>
-    // Real-time functionality with WebSockets
-    const discussionId = {{ discussion.id }};
-    const commentsContainer = document.getElementById('comments-container');
-    const noCommentsMessage = document.getElementById('no-comments-message');
-
-    // Function to create a comment HTML element (updated for Bootstrap)
-    function createCommentElement(comment) {
-        const commentDiv = document.createElement('div');
-        commentDiv.className = `card mb-3 comment-item ${comment.is_flagged ? 'flagged-comment' : ''}`;
-        commentDiv.id = `comment-${comment.id}`;
-
-        let attachmentsHtml = '';
-        if (comment.attachments && comment.attachments.length > 0) {
-            attachmentsHtml = `
-                <div class="mt-3 pt-3 border-top border-light">
-                    <h4 class="h6 mb-2 text-muted">Comment Attachments:</h4>
-                    <div class="row row-cols-1 row-cols-sm-2 g-2">
-            `;
-            comment.attachments.forEach(att => {
-                attachmentsHtml += `
-                    <div class="col">
-                        <div class="card bg-light border-0 shadow-sm">
-                            <div class="card-body p-2">
-                                ${att.image_url ? `<img src="${att.image_url}" alt="${att.description || 'Comment attachment image'}" class="img-fluid rounded mb-1">` : ''}
-                                ${att.file_url ? `<p class="card-text text-primary small"><a href="${att.file_url}" target="_blank" class="text-decoration-none d-block text-truncate"><i class="bi bi-file-earmark"></i> Download: ${att.file_url.split('/').pop()}</a></p>` : ''}
-                                ${att.description ? `<p class="card-text small text-muted mt-1">${att.description}</p>` : ''}
+            let attachmentsHtml = '';
+            if (commentData.attachments && commentData.attachments.length > 0) {
+                attachmentsHtml = `
+                    <div class="mt-3 pt-3 border-top border-light">
+                        <h4 class="h6 mb-2 text-muted">Comment Attachments:</h4>
+                        <div class="row row-cols-1 row-cols-sm-2 g-2">
+                `;
+                commentData.attachments.forEach(att => {
+                    attachmentsHtml += `
+                        <div class="col">
+                            <div class="card bg-light border-0 shadow-sm">
+                                <div class="card-body p-2">
+                                    ${att.image_url ? `<img src="<span class="math-inline">\{att\.image\_url\}" alt\="</span>{att.description || 'Comment attachment image'}" class="img-fluid rounded mb-1">` : ''}
+                                    ${att.file_url ? `<p class="card-text text-primary small"><a href="${att.file_url}" target="_blank" class="text-decoration-none d-block text-truncate"><i class="bi bi-file-earmark"></i> Download: ${att.file_url.split('/').pop()}</a></p>` : ''}
+                                    ${att.description ? `<p class="card-text small text-muted mt-1">${att.description}</p>` : ''}
+                                </div>
                             </div>
+                        </div>
+                    `;
+                });
+                attachmentsHtml += `
                         </div>
                     </div>
                 `;
-            });
-            attachmentsHtml += `
+            }
+
+            let replyButtonHtml = '';
+            if (!isReply) { // Only show reply button for top-level comments (via JS)
+                replyButtonHtml = `<a href="/discussions/${discussionId}/reply/${commentData.id}/" class="btn btn-sm btn-outline-secondary mt-2">Reply</a>`;
+            }
+
+            let deleteButtonHtml = '';
+            // Assuming you pass author.id in your WebSocket message to compare with current user ID
+            if (currentUserIsAuthenticated && currentUserId === commentData.author_id) {
+                 deleteButtonHtml = `<a href="/discussions/delete_comment/${commentData.id}/" class="btn btn-sm btn-outline-danger mt-2">Delete</a>`;
+            }
+
+
+            commentDiv.innerHTML = `
+                <div class="card-body">
+                    <p class="card-text">${commentData.content}</p>
+                    <div class="d-flex justify-content-between align-items-center small text-muted">
+                        <span>By ${commentData.author} on ${commentData.created_at}</span>
+                        <div>
+                            <a href="#" class="btn btn-sm btn-outline-success upvote-btn" data-comment-id="${commentData.id}">
+                                <i class="bi bi-arrow-up-square"></i> Upvote
+                            </a>
+                            <a href="#" class="btn btn-sm btn-outline-danger downvote-btn" data-comment-id="${commentData.id}">
+                                 <i class="bi bi-arrow-down-square"></i> Downvote
+                            </a>
+                            ${replyButtonHtml}
+                            ${deleteButtonHtml}
+                            ${commentData.is_flagged ? '<span class="badge bg-warning text-dark">Flagged!</span>' : ''}
+                        </div>
                     </div>
+                    ${commentData.is_flagged && commentData.flag_reason ? `<p class="flag-reason mt-1 mb-0">Reason: ${commentData.flag_reason}</p>` : ''}
+                    ${attachmentsHtml}
                 </div>
             `;
+            return commentDiv;
         }
+        // WebSocket connection
+        const chatSocket = new WebSocket(
+            'ws://' + window.location.host + '/ws/discussions/' + discussionId + '/'
+        );
 
-        commentDiv.innerHTML = `
-            <div class="card-body">
-                <p class="card-text">${comment.content}</p>
-                <div class="d-flex justify-content-between align-items-center small text-muted">
-                    <span>By ${comment.author} on ${comment.created_at}</span>
-                    ${comment.is_flagged ? '<span class="badge bg-warning text-dark">Flagged!</span>' : ''}
-                </div>
-                ${comment.is_flagged && comment.flag_reason ? `<p class="flag-reason mt-1 mb-0">Reason: ${comment.flag_reason}</p>` : ''}
-                ${attachmentsHtml}
-            </div>
-        `;
-        return commentDiv;
-    }
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            const messageType = data.type;
 
-    // WebSocket connection
-    const chatSocket = new WebSocket(
-        'ws://' + window.location.host + '/ws/discussions/' + discussionId + '/'
-    );
+            if (messageType === 'new_comment_notification') {
+                const commentData = data.message;
+                const newCommentElement = createCommentElement(commentData);
 
-    chatSocket.onmessage = function(e) {
-        const data = JSON.parse(e.data);
-        const messageType = data.type;
+                // Remove "No comments yet" message if it exists
+                if (noCommentsMessage) {
+                    noCommentsMessage.remove();
+                }
 
-        if (messageType === 'new_comment_notification') {
-            const commentData = data.message;
-            const newCommentElement = createCommentElement(commentData);
+                commentsContainer.appendChild(newCommentElement);
+                commentsContainer.scrollTop = commentsContainer.scrollHeight; // Scroll to bottom
 
-            // Remove "No comments yet" message if it exists
-            if (noCommentsMessage) {
-                noCommentsMessage.remove();
+                // Show a browser notification
+                if (Notification.permission === "granted") {
+                    new Notification(`New comment on "${discussion.title}"`, {
+                        body: `${commentData.author}: ${commentData.content.substring(0, 50)}...`,
+                        icon: '/static/favicon.ico' // Or a relevant icon
+                    });
+                } else if (Notification.permission !== "denied") {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === "granted") {
+                            new Notification(`New comment on "${discussion.title}"`, {
+                                body: `${commentData.author}: ${commentData.content.substring(0, 50)}...`,
+                                icon: '/static/favicon.ico'
+                            });
+                        }
+                    });
+                }
+            }
+        };
+
+        chatSocket.onclose = function(e) {
+            console.error('Chat socket closed unexpectedly');
+        };
+
+        // Request notification permission on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!("Notification" in window)) {
+                console.warn("This browser does not support desktop notification");
+            } else if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+                Notification.requestPermission();
+            }
+        });
+
+        // Voting functionality
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('upvote-btn') || e.target.closest('.upvote-btn')) {
+                const button = e.target.closest('.upvote-btn');
+                const commentId = button.dataset.commentId;
+                fetch(`/discussions/upvote_comment/${commentId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Update UI as needed (e.g., change button style, update vote count)
+                        console.log('Upvoted', data);
+                    });
             }
 
-            commentsContainer.appendChild(newCommentElement);
-            commentsContainer.scrollTop = commentsContainer.scrollHeight; // Scroll to bottom
-
-            // Show a browser notification
-            if (Notification.permission === "granted") {
-                new Notification(`New comment on "${discussion.title}"`, {
-                    body: `${commentData.author}: ${commentData.content.substring(0, 50)}...`,
-                    icon: '/static/favicon.ico' // Or a relevant icon
-                });
-            } else if (Notification.permission !== "denied") {
-                Notification.requestPermission().then(permission => {
-                    if (permission === "granted") {
-                        new Notification(`New comment on "${discussion.title}"`, {
-                            body: `${commentData.author}: ${commentData.content.substring(0, 50)}...`,
-                            icon: '/static/favicon.ico'
-                        });
-                    }
-                });
+            if (e.target.classList.contains('downvote-btn') || e.target.closest('.downvote-btn')) {
+                const button = e.target.closest('.downvote-btn');
+                const commentId = button.dataset.commentId;
+                fetch(`/discussions/downvote_comment/${commentId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Update UI as needed
+                        console.log('Downvoted', data);
+                    });
             }
-        }
-    };
-
-    chatSocket.onclose = function(e) {
-        console.error('Chat socket closed unexpectedly');
-    };
-
-    // Request notification permission on page load
-    document.addEventListener('DOMContentLoaded', () => {
-        if (!("Notification" in window)) {
-            console.warn("This browser does not support desktop notification");
-        } else if (Notification.permission !== "granted" && Notification.permission !== "denied") {
-            Notification.requestPermission();
-        }
-    });
-</script>
+        });
+    </script>
 {% endblock %}

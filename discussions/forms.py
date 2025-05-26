@@ -59,7 +59,11 @@ class CommentCreateForm(forms.ModelForm):
     attachment_file = forms.FileField(required=False, label="Upload File")
     attachment_image = forms.ImageField(required=False, label="Upload Image")
     attachment_description = forms.CharField(max_length=255, required=False, label="Attachment Description")
-
+    #parent = forms.IntegerField(widget=forms.HiddenInput, required=False) 
     class Meta:
         model = Comment
-        fields = ['content']
+        fields = ['content', 'parent'] # Keep 'parent' here, as it refers to the model field
+        widgets = {
+            # ADD this widget to make the 'parent' field hidden
+            'parent': forms.HiddenInput(),
+        }

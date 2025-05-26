@@ -57,48 +57,42 @@ class DiscussionAdmin(admin.ModelAdmin):
         return "N/A"
     location_display.short_description = 'Location'
 
-
-# ----------------------------------------------------
-# 2. Customizing Comment Admin
-# ----------------------------------------------------
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
-    """
-    Customizes the display and interaction for the Comment model in the admin.
-    Highlights flagged comments.
-    """
-    list_display = ('content', 'discussion', 'author', 'created_at', 'is_flagged')
-    list_filter = ('created_at', 'author', 'is_flagged')
+    list_display = ('content', 'discussion', 'author', 'created_at', 'votes', 'is_flagged', 'parent') # Include votes and parent
+    list_filter = ('created_at', 'author', 'is_flagged', 'is_deleted')  # Add is_deleted
     search_fields = ('content', 'author__username', 'discussion__title')
-    raw_id_fields = ('discussion', 'author')
+    raw_id_fields = ('discussion', 'author', 'parent') # Add parent
     date_hierarchy = 'created_at'
-    ordering = ('-created_at',)
+    ordering = ('-votes', '-created_at')  # Order by votes, then date
 
     fieldsets = (
         (None, {
-            'fields': ('discussion', 'author', 'content')
+            'fields': ('discussion', 'author', 'content', 'parent') # Include parent
         }),
         ('Moderation Status', {
-            'fields': ('is_flagged', 'flag_reason'),
-            'classes': ('collapse',), # Makes this section collapsible
+            'fields': ('is_flagged', 'flag_reason', 'is_deleted'),  # Add is_deleted
+            'classes': ('collapse',),
             'description': 'AI-moderated flagging status. Flagged comments might require review.'
+        }),
+        ('Voting', {
+            'fields': ('votes',),  # Add votes
+            'classes': ('collapse',),
         }),
     )
 
-    # Add custom actions for moderation (e.g., manually unflag a comment)
-    actions = ['unflag_comments']
+    actions = ['unflag_comments', 'soft_delete_comments']
 
     def unflag_comments(self, request, queryset):
-        """Action to manually unflag selected comments."""
         updated_count = queryset.update(is_flagged=False, flag_reason=None)
         self.message_user(request, f'{updated_count} comments successfully unflagged.', level=admin.messages.SUCCESS)
     unflag_comments.short_description = "Unflag selected comments"
 
-    # Add inlines to allow managing attachments from the Comment detail page (if desired)
-    inlines = [ContentAttachmentInline] # This will allow attaching content to comments too
+    def soft_delete_comments(self, request, queryset):
+        updated_count = queryset.update(is_deleted=True)
+        self.message_user(request, f'{updated_count} comments soft-deleted.', level=admin.messages.SUCCESS)
+    soft_delete_comments.short_description = "Soft-delete selected comments"
 
-
-# ----------------------------------------------------
 # 3. Customizing ContentAttachment Admin
 # ----------------------------------------------------
 @admin.register(ContentAttachment)

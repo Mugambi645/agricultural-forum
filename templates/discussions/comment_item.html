@@ -1,0 +1,56 @@
+<div class="card mb-3 comment-item {% if comment.is_flagged %}flagged-comment{% endif %} {% if is_reply %}ms-5{% endif %}" id="comment-{{ comment.id }}">
+    <div class="card-body">
+        <p class="card-text">{{ comment.content }}</p>
+        <div class="d-flex justify-content-between align-items-center small text-muted">
+            <span>By {{ comment.author.username }} on {{ comment.created_at|date:"M d, Y H:i" }}</span>
+            <div>
+                <a href="#" class="btn btn-sm btn-outline-success upvote-btn" data-comment-id="{{ comment.id }}">
+                    <i class="bi bi-arrow-up-square"></i> Upvote
+                </a>
+                <a href="#" class="btn btn-sm btn-outline-danger downvote-btn" data-comment-id="{{ comment.id }}">
+                    <i class="bi bi-arrow-down-square"></i> Downvote
+                </a>
+                {% if not is_reply %} {# This is for server-side rendered top-level comments #}
+                    <a href="{% url 'discussions:reply_to_comment' discussion_pk=comment.discussion.pk parent_pk=comment.id %}" class="btn btn-sm btn-outline-secondary mt-2">Reply</a>
+                {% endif %}
+                {% if user == comment.author %}
+                    <a href="{% url 'discussions:delete_comment' comment.id %}" class="btn btn-sm btn-outline-danger mt-2">Delete</a>
+                {% endif %}
+                {% if comment.is_flagged %}
+                    <span class="badge bg-warning text-dark">Flagged!</span>
+                {% endif %}
+            </div>
+        </div>
+        {% if comment.is_flagged and comment.flag_reason %}
+            <p class="flag-reason mt-1 mb-0">Reason: {{ comment.flag_reason }}</p>
+        {% endif %}
+
+        {% if comment.attachments.all %}
+            <div class="mt-3 pt-3 border-top border-light">
+                <h4 class="h6 mb-2 text-muted">Comment Attachments:</h4>
+                <div class="row row-cols-1 row-cols-sm-2 g-2">
+                    {% for attachment in comment.attachments.all %}
+                        <div class="col">
+                            <div class="card bg-light border-0 shadow-sm">
+                                <div class="card-body p-2">
+                                    {% if attachment.image %}
+                                        <img src="{{ attachment.image.url }}" alt="{{ attachment.description|default:'Comment attachment image' }}" class="img-fluid rounded mb-1">
+                                    {% elif attachment.file %}
+                                        <p class="card-text text-primary small">
+                                            <a href="{{ attachment.file.url }}" target="_blank" class="text-decoration-none d-block text-truncate">
+                                                <i class="bi bi-file-earmark"></i> Download: {{ attachment.file.name|cut:"attachments/files/" }}
+                                            </a>
+                                        </p>
+                                    {% endif %}
+                                    {% if attachment.description %}
+                                        <p class="card-text small text-muted mt-1">{{ attachment.description }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>

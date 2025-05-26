@@ -37,12 +37,23 @@ class Comment(models.Model):
     is_flagged = models.BooleanField(default=False) # For ML moderation
     flag_reason = models.TextField(blank=True, null=True) # Reason for flagging
 
+    votes = models.IntegerField(default=0)  # For upvotes/downvotes
+    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='replies') # For replies
+    is_deleted = models.BooleanField(default=False) # For soft deletes
+
     class Meta:
         ordering = ['created_at'] # Order comments by oldest first
 
     def __str__(self):
         return f"Comment by {self.author.username} on {self.discussion.title}"
+    
 
+    def get_absolute_url(self):
+         return reverse('discussions:discussion_detail', args=[str(self.discussion.id)])
+
+    @property
+    def attachments(self):
+        return self.contentattachment_set.all()
 class ContentAttachment(models.Model):
     """Allows users to attach images or files to discussions or comments."""
     discussion = models.ForeignKey(Discussion, on_delete=models.CASCADE, null=True, blank=True, related_name='attachments')
@@ -53,8 +64,4 @@ class ContentAttachment(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        if self.discussion:
-            return f"Attachment for Discussion: {self.discussion.title}"
-        elif self.comment:
-            return f"Attachment for Comment: {self.comment.id}"
-        return "Standalone Attachment"
+        return self.description or self.file.name or self.image.name
