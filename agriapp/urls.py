@@ -23,6 +23,7 @@ urlpatterns = [
 
     path("accounts/", include("accounts.urls", namespace="accounts")),
     path("", include("home.urls", namespace="home.urls")),
+    path("discussions/", include("discussions.urls", namespace="discussions")),
     path('accounts/', include('django.contrib.auth.urls')),
 ]
 # Serve media files during development (IMPORTANT: NOT FOR PRODUCTION)
