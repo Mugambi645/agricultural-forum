@@ -10,9 +10,6 @@ AgriApp is an innovative web application designed to empower farmers and agricul
 
 ---
 
-Okay, let's delve into the specifics of the dataset used for training AgriApp's plant disease detection model and the mathematical metrics employed to evaluate its accuracy.
-
----
 
 ## The Plant Disease Dataset: Foundation of AgriApp's Intelligence
 
