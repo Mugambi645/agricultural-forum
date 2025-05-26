@@ -10,7 +10,27 @@
         <h1 class="card-title text-success mb-4">Create New Discussion</h1>
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
-            {{ form|crispy }} {# Render the form using crispy_forms #}
+            {# Render regular fields using crispy #}
+            {{ form.title|as_crispy_field }}
+            {{ form.content|as_crispy_field }}
+
+            {# Manually render location field to ensure map widget works #}
+            <div class="mb-3">
+                <label for="{{ form.location.id_for_label }}" class="form-label">{{ form.location.label }}</label>
+                {{ form.location }}
+                {% if form.location.help_text %}
+                    <div class="form-text">{{ form.location.help_text }}</div>
+                {% endif %}
+                {% for error in form.location.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            {# Render attachment fields using crispy #}
+            {{ form.attachment_file|as_crispy_field }}
+            {{ form.attachment_image|as_crispy_field }}
+            {{ form.attachment_description|as_crispy_field }}
+
             <button type="submit" class="btn btn-success mt-3">Create Discussion</button>
         </form>
     </div>

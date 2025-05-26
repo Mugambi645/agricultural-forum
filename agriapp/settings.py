@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "crispy_forms",
     "crispy_bootstrap5",
     "channels",
+    'location_field', 
 ]
 
 MIDDLEWARE = [
@@ -174,3 +175,4 @@ CHANNEL_LAYERS = {
         # },
     },
 }
+

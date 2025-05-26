@@ -3,7 +3,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.urls import reverse
 from django.conf import settings
-
+from location_field.models.plain import PlainLocationField 
 class Discussion(models.Model):
     """Represents a main discussion post in the forum."""
     title = models.CharField(max_length=200)
@@ -12,6 +12,12 @@ class Discussion(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    location = PlainLocationField(
+        based_fields=['title'], # This field will be used to automatically set the map center
+        zoom=10,                 # Zoom level for this specific map
+        blank=True,              # Make it optional
+        null=True                # Allow NULL in database
+    )
     class Meta:
         ordering = ['-created_at'] # Order discussions by newest first
 

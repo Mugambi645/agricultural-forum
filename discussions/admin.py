@@ -1,6 +1,9 @@
 
 from django.contrib import admin
 from .models import Discussion, Comment, ContentAttachment
+# REMOVE THIS LINE: from location_field.admin import plain as admin_plain
+# You DO NOT need to import anything specific from location_field.admin
+# The PlainLocationField model field itself will render the map widget in the admin.
 
 # ----------------------------------------------------
 # 1. Customizing Discussion Admin
@@ -11,13 +14,14 @@ class ContentAttachmentInline(admin.TabularInline):
     """
     model = ContentAttachment
     extra = 1 # Number of empty forms to display
+    fields = ('file', 'image', 'description') # Fields to display in the inline form
 
 @admin.register(Discussion) # This decorator is equivalent to admin.site.register(Discussion, DiscussionAdmin)
 class DiscussionAdmin(admin.ModelAdmin):
     """
     Customizes the display and interaction for the Discussion model in the admin.
     """
-    list_display = ('title', 'author', 'created_at', 'updated_at') # Fields to display in the list view
+    list_display = ('title', 'author', 'created_at', 'updated_at', 'location_display') # Add location to list display
     list_filter = ('created_at', 'author') # Fields to filter by
     search_fields = ('title', 'content', 'author__username') # Fields to search across
     raw_id_fields = ('author',) # Use a raw ID input for ForeignKey for large user bases
@@ -30,13 +34,29 @@ class DiscussionAdmin(admin.ModelAdmin):
     # Fieldsets for better organization in the detail view
     fieldsets = (
         (None, {
-            'fields': ('title', 'content')
+            'fields': ('title', 'content', 'location') # Include location here. This is where the magic happens for the map widget.
         }),
         ('Metadata', {
             'fields': ('author',),
             'classes': ('collapse',), # Makes this section collapsible
         }),
     )
+
+    # Custom method to display location coordinates in a readable format
+    def location_display(self, obj):
+        if obj.location:
+            # Assuming location is stored as "latitude,longitude"
+            parts = obj.location.split(',')
+            if len(parts) == 2:
+                try:
+                    lat = float(parts[0])
+                    lon = float(parts[1])
+                    return f"Lat: {lat:.4f}, Lon: {lon:.4f}" # Format to 4 decimal places
+                except ValueError:
+                    return obj.location # Return raw if parsing fails
+        return "N/A"
+    location_display.short_description = 'Location'
+
 
 # ----------------------------------------------------
 # 2. Customizing Comment Admin
@@ -54,23 +74,13 @@ class CommentAdmin(admin.ModelAdmin):
     date_hierarchy = 'created_at'
     ordering = ('-created_at',)
 
-    # Display specific fields for flagged comments
-    # You can make 'flag_reason' editable only if 'is_flagged' is True
-    def get_form(self, request, obj=None, **kwargs):
-        form = super().get_form(request, obj, **kwargs)
-        if obj and not obj.is_flagged:
-            # If not flagged, make flag_reason read-only or hide it
-            # For simplicity, we'll just not show it in the form fieldsets if not flagged
-            pass # Keep it in the fields list, but it will be empty
-        return form
-
     fieldsets = (
         (None, {
             'fields': ('discussion', 'author', 'content')
         }),
         ('Moderation Status', {
             'fields': ('is_flagged', 'flag_reason'),
-            'classes': ('collapse',),
+            'classes': ('collapse',), # Makes this section collapsible
             'description': 'AI-moderated flagging status. Flagged comments might require review.'
         }),
     )
@@ -84,6 +94,9 @@ class CommentAdmin(admin.ModelAdmin):
         self.message_user(request, f'{updated_count} comments successfully unflagged.', level=admin.messages.SUCCESS)
     unflag_comments.short_description = "Unflag selected comments"
 
+    # Add inlines to allow managing attachments from the Comment detail page (if desired)
+    inlines = [ContentAttachmentInline] # This will allow attaching content to comments too
+
 
 # ----------------------------------------------------
 # 3. Customizing ContentAttachment Admin
@@ -96,8 +109,8 @@ class ContentAttachmentAdmin(admin.ModelAdmin):
     list_display = ('description', 'file_name', 'related_object', 'uploaded_at')
     list_filter = ('uploaded_at',)
     search_fields = ('description', 'file', 'image')
+    raw_id_fields = ('discussion', 'comment') # Use raw ID for ForeignKey
 
-    # Custom method to display the file name nicely
     def file_name(self, obj):
         if obj.file:
             return obj.file.name.split('/')[-1]
@@ -106,7 +119,6 @@ class ContentAttachmentAdmin(admin.ModelAdmin):
         return 'N/A'
     file_name.short_description = 'File Name'
 
-    # Custom method to show which object (discussion or comment) it's related to
     def related_object(self, obj):
         if obj.discussion:
             return f'Discussion: {obj.discussion.title}'
@@ -114,7 +126,3 @@ class ContentAttachmentAdmin(admin.ModelAdmin):
             return f'Comment: {obj.comment.id}'
         return 'None'
     related_object.short_description = 'Related To'
-
-    # Ensure only one of discussion or comment is set, or neither.
-    # You might want to use custom form validation for this in a real app.
-    # For display, we ensure clarity.

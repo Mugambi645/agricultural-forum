@@ -13,6 +13,13 @@
             Posted by {{ discussion.author.username }} on {{ discussion.created_at|date:"M d, Y H:i" }}
         </p>
 
+        {% if discussion.location %}
+            <hr>
+            <h3 class="h5 mb-3 text-muted">Location:</h3>
+            <div id="discussion-map" style="height: 300px; width: 100%; border-radius: 0.25rem;"></div>
+            <p class="small text-muted mt-2">Coordinates: {{ discussion.location }}</p>
+        {% endif %}
+
         {% if attachments %}
             <hr>
             <h3 class="h5 mb-3 text-muted">Attachments:</h3>
@@ -101,15 +108,45 @@
             <h3 class="h4 mb-3 text-success">Add a Comment</h3>
             <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
-                {{ comment_form|crispy }} {# Use crispy filter here #}
+                {{ comment_form|crispy }} {# Render the form using crispy_forms #}
                 <button type="submit" class="btn btn-success mt-3">Post Comment</button>
             </form>
         </div>
     </div>
 {% else %}
     <div class="alert alert-info mt-4" role="alert">
-        Please <a href="{% url 'accounts:login' %}" class="alert-link">log in</a> to add a comment.
+        Please <a href="{% url 'login' %}" class="alert-link">log in</a> to add a comment.
     </div>
+{% endif %}
+
+{% if discussion.location %}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAo9TchX0AdfXhjmYpajlfWsoVrpBUc0yIAPDFlA=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nEFhflZpDk/r2tJzDk=" crossorigin=""></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const mapElement = document.getElementById('discussion-map');
+            if (mapElement) {
+                // Parse coordinates (they come as "latitude,longitude")
+                const [lat, lon] = "{{ discussion.location }}".split(',').map(Number);
+                const mapCenter = [lat, lon];
+
+                const map = L.map('discussion-map').setView(mapCenter, 13); // Default zoom 13
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(map);
+
+                L.marker(mapCenter).addTo(map)
+                    .bindPopup("<b>Discussion Location</b>").openPopup();
+
+                // Invalidate size after map container is visible (important if map is in a hidden tab/modal)
+                setTimeout(function () {
+                    map.invalidateSize();
+                }, 100);
+            }
+        });
+    </script>
 {% endif %}
 
 <script>
