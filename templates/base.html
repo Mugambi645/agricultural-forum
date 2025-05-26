@@ -64,7 +64,7 @@
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownUser">
                                 {# Add a profile link if you have one #}
-                                {# <li><a class="dropdown-item" href="{% url 'accounts:profile' %}">Profile</a></li> #}
+                                <li><a class="dropdown-item" href="{% url 'accounts:profile' %}">Profile</a></li> 
                                 <li>
                                     <form action="{% url 'accounts:logout' %}" method="post" class="dropdown-item">
                                         {% csrf_token %}
