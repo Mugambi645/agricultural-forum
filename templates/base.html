@@ -44,9 +44,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-success">
         <div class="container">
             <a class="navbar-brand" href="{% url 'discussions:discussion_list' %}">AgriForum</a> {# Changed to discussion_list for direct link #}
-            <li class="nav-item">
-                <a class="nav-link {% if request.resolver_match.url_name == 'disease_predictor:disease_detector' %}active{% endif %}" href="{% url 'disease_predictor:disease_detector' %}">Disease Detector</a> {# ADD THIS LINE #}
-            </li>
+          
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -57,6 +55,9 @@
                     </li>
                      <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'discussions:create_discussion' %}active{% endif %}" href="{% url 'discussions:create_discussion' %}">New Discussion</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'disease_predictor:predict' %}active{% endif %}" href="{% url 'disease_predictor:predict' %}">Predict Plant Disease</a>
                     </li>
                 </ul>
                 <ul class="navbar-nav">
